@@ -16,6 +16,7 @@
   "dependencies": {
     "@astrojs/node": "^10.0.5",
     "@astrojs/react": "^5.0.3",
+    "@astrojs/vercel": "^10.0.4",
     "@supabase/supabase-js": "^2.104.0",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.1.8",
