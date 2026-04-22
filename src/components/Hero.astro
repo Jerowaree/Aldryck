@@ -1,4 +1,5 @@
 ---
+import { Image } from "astro:assets";
 ---
 
 <section
@@ -6,6 +7,15 @@
   aria-label="Portada"
 >
   <div class="pointer-events-none absolute inset-0" aria-hidden="true">
+    <Image
+      src="/foto1.jpeg"
+      alt=""
+      width={1600}
+      height={2000}
+      class="h-full w-full object-cover opacity-40 brightness-50"
+      loading="eager"
+      decoding="async"
+    />
     <div
       class="absolute inset-0 bg-linear-to-t from-surface via-surface/70 to-surface/20"
     >

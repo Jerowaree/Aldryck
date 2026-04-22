@@ -1,5 +1,5 @@
 ---
-
+import { Image } from "astro:assets";
 ---
 
 <section
@@ -8,9 +8,9 @@
   aria-labelledby="sobre-mi-heading"
 >
   <div
-    class="mx-auto grid max-w-6xl gap-12 px-4 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8"
+    class="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:gap-16 lg:px-8"
   >
-    <div class="lg:col-span-5">
+    <div class="lg:col-span-12">
       <p class="text-xs font-semibold uppercase tracking-[0.3em] text-accent">
         Sobre mí
       </p>
@@ -21,18 +21,43 @@
         Cerca del juego
       </h2>
     </div>
-    <div class="space-y-6 text-ink-muted/90 lg:col-span-7 lg:pt-2">
+    <div class="lg:col-span-5">
+      <div class="overflow-hidden rounded-2xl border border-line">
+        <Image
+          src="/foto2.jpeg"
+          alt="Retrato deportivo en primer plano"
+          width={960}
+          height={1200}
+          class="h-auto w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    </div>
+    <div class="space-y-6 text-ink-muted/90 lg:col-span-7">
       <p class="text-lg leading-relaxed text-ink/80">
-        Soy fotógrafo y narrador deportivo.
+        Soy fotógrafo y narrador deportivo. Trabajo con historias reales.
       </p>
       <p class="text-lg leading-relaxed text-ink/80">
         Desde la adrenalina del último segundo hasta la intensidad de cada
         jugada.
       </p>
       <p class="text-lg leading-relaxed text-ink/80">
-        Trabajo desde la línea de fondo: mismo pulso que el atleta, misma
-        urgencia. Busco imágenes limpias, con contraste fuerte y composición
-        clara — nada que distraiga del gesto decisivo.
+        Trabajo con lo que hay: luces duras, sombras reales, vapor en el aire y
+        miradas que dicen más que el marcador.
+      </p>
+      <p class="text-lg leading-relaxed text-ink/80">
+        Mi proceso es simple: observar, anticipar y esperar. Cuando llega el
+        gesto exacto, disparo. No busco poses, busco momentos.
+      </p>
+      <p class="text-lg leading-relaxed text-ink/80">
+        Trabajo desde la línea de fondo, con el mismo pulso que el atleta y la
+        misma urgencia. Me gustan las imágenes limpias, con contraste y una
+        composición clara, sin ruido alrededor.
+      </p>
+      <p class="text-lg leading-relaxed text-ink/80">
+        Cada sesión termina siendo un resumen claro del juego: velocidad,
+        impacto y emoción.
       </p>
     </div>
   </div>
