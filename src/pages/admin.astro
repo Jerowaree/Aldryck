@@ -7,6 +7,8 @@ import AdminLeadsSection from "../components/admin/AdminLeadsSection.astro";
 import AdminPhotosSection from "../components/admin/AdminPhotosSection.astro";
 import Layout from "../layouts/Layout.astro";
 
+
+export const prerender = false;
 const allowedAdminEmails = String(
   import.meta.env.PUBLIC_ADMIN_ALLOWED_EMAILS || ""
 )

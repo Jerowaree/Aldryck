@@ -7,6 +7,8 @@ import {
 } from "../../lib/portfolio";
 import { getServerSupabaseAdminClient } from "../../lib/supabase";
 
+export const prerender = false;
+
 export const GET: APIRoute = async ({ request }) => {
   try {
     const user = await requireAdminUser(request);

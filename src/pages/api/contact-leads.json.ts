@@ -3,6 +3,7 @@ import { requireAdminUser, unauthorizedResponse } from "../../lib/adminAuth";
 import { createContactLead, fetchContactLeads } from "../../lib/portfolio";
 import { getServerSupabaseAdminClient } from "../../lib/supabase";
 
+export const prerender = false;
 const MAX_BODY_BYTES = 8 * 1024;
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 8;
