@@ -3,6 +3,7 @@ import {
   createCategory,
   deleteCategoryById,
   fetchCategories,
+  updateCategory,
 } from "../../lib/portfolio";
 import { requireAdminUser, unauthorizedResponse } from "../../lib/adminAuth";
 import {
@@ -57,6 +58,35 @@ export const POST: APIRoute = async ({ request }) => {
       error instanceof Error
         ? error.message
         : "No se pudo crear la categoria.",
+      500
+    );
+  }
+};
+
+export const PATCH: APIRoute = async ({ request }) => {
+  try {
+    const user = await requireAdminUser(request);
+    if (!user) return unauthorizedResponse();
+
+    const body = await request.json();
+    const id = String(body?.id || "");
+    const name = body?.name ? String(body.name) : undefined;
+    const slug = body?.slug ? String(body.slug) : undefined;
+
+    if (!id.trim()) {
+      return jsonError("El id de la categoria es obligatorio.", 400);
+    }
+
+    const supabase = getServerSupabaseClient();
+    const category = await updateCategory(supabase, id, { name, slug });
+
+    return new Response(JSON.stringify({ data: category }), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+      status: 200,
+    });
+  } catch (error) {
+    return jsonError(
+      error instanceof Error ? error.message : "No se pudo actualizar la categoria.",
       500
     );
   }

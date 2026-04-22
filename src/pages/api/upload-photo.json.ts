@@ -61,7 +61,15 @@ function jsonError(message: string, status: number) {
 
 function normalizeUploadError(message: string) {
   if (message.includes("row-level security")) {
-    return "No se pudo guardar por permisos de Supabase. Agrega SUPABASE_SERVICE_ROLE_KEY en .env y reinicia pnpm dev.";
+    return "No se pudo guardar por permisos de Supabase. Revisa que SUPABASE_SERVICE_ROLE_KEY esté configurada en producción.";
   }
-  return message;
+  if (message.includes("Payload Too Large") || message.includes("413")) {
+    return "La imagen es demasiado pesada para el servidor.";
+  }
+  if (message.includes("Storage quenching") || message.includes("quota")) {
+    return "Límite de almacenamiento de Supabase alcanzado.";
+  }
+  // Log the real error for the admin to see if they check the response
+  console.error("[Upload API Error]:", message);
+  return `Error detallado: ${message}`;
 }

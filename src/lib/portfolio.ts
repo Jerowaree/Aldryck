@@ -82,6 +82,29 @@ export async function deleteCategoryById(client: SupabaseClient, categoryId: str
   if (error) throw error;
 }
 
+export async function updateCategory(
+  client: SupabaseClient,
+  id: string,
+  input: Partial<CreateCategoryInput>
+) {
+  const name = input.name?.trim();
+  const slug = input.slug?.trim();
+
+  const updateData: any = {};
+  if (name) updateData.name = name;
+  if (slug) updateData.slug = slug.toLowerCase();
+
+  const { data, error } = await client
+    .from("categories")
+    .update(updateData)
+    .eq("id", id)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as Category;
+}
+
 export async function fetchPublishedPhotos(client: SupabaseClient) {
   const { data, error } = await client
     .from("photos")

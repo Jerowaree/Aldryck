@@ -2,6 +2,8 @@
 import AdminCategoriesSection from "../components/admin/AdminCategoriesSection.astro";
 import AdminCreateSection from "../components/admin/AdminCreateSection.astro";
 import AdminEditPhotoModal from "../components/admin/AdminEditPhotoModal.astro";
+import AdminEditCategoryModal from "../components/admin/AdminEditCategoryModal.astro";
+import AdminDeleteConfirmModal from "../components/admin/AdminDeleteConfirmModal.astro";
 import AdminHeader from "../components/admin/AdminHeader.astro";
 import AdminLeadsSection from "../components/admin/AdminLeadsSection.astro";
 import AdminPhotosSection from "../components/admin/AdminPhotosSection.astro";
@@ -32,6 +34,8 @@ if (adminCookie !== "1") {
     <AdminCategoriesSection />
     <AdminPhotosSection />
     <AdminEditPhotoModal />
+    <AdminEditCategoryModal />
+    <AdminDeleteConfirmModal />
     <AdminLeadsSection />
   </main>
 

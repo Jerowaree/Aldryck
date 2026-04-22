@@ -1,0 +1,40 @@
+<dialog
+  id="delete-confirm-modal"
+  class="m-auto w-[min(92vw,400px)] rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl shadow-black/40 backdrop:bg-black/70"
+  aria-label="Confirmar eliminación"
+>
+  <div class="p-6">
+    <div class="flex items-center gap-4 text-red-400">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-500/10">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-display text-xl tracking-wide text-ink">¿Estás seguro?</h3>
+        <p class="mt-1 text-sm text-ink-muted">Esta acción no se puede deshacer.</p>
+      </div>
+    </div>
+    
+    <p id="delete-confirm-message" class="mt-4 text-sm leading-relaxed text-ink-muted">
+      Se eliminará el elemento permanentemente del sistema.
+    </p>
+
+    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <button
+        id="cancel-delete-modal"
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg border border-line bg-surface px-5 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+      >
+        Cancelar
+      </button>
+      <button
+        id="confirm-delete-button"
+        type="button"
+        class="inline-flex min-h-11 items-center justify-center rounded-lg bg-red-500 px-5 text-sm font-semibold text-white transition-colors hover:bg-red-600"
+      >
+        Eliminar
+      </button>
+    </div>
+  </div>
+</dialog>
