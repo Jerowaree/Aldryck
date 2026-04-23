@@ -264,10 +264,33 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     event.preventDefault();
 
     const formData = new FormData(photoForm);
-    const file = formData.get("file") as File;
-    if (file && file.size > 10 * 1024 * 1024) { // 10MB limit check
-      setStatus("Error: El archivo es demasiado grande (máx 10MB).");
+    const files = formData.getAll("file").filter((item) => item instanceof File) as File[];
+    const title = String(formData.get("title") || "").trim();
+    if (!files.length) {
+      setStatus("Error: Debes seleccionar al menos una imagen.");
       return;
+    }
+    if (files.length > 15) {
+      setStatus("Error: Solo se permiten hasta 15 archivos por subida.");
+      return;
+    }
+    if (files.length === 1 && !title) {
+      setStatus("Error: El titulo es obligatorio si subes una sola foto.");
+      return;
+    }
+    for (const file of files) {
+      const allowedTypes = new Set(["image/jpeg", "image/png"]);
+      const extension = file.name.split(".").pop()?.toLowerCase() || "";
+      const isAllowedType = file.type ? allowedTypes.has(file.type) : false;
+      const isAllowedExtension = extension === "jpg" || extension === "jpeg" || extension === "png";
+      if (!isAllowedType && !isAllowedExtension) {
+        setStatus("Error: Solo se permiten imagenes JPG o PNG.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit check
+        setStatus(`Error: ${file.name} es demasiado grande (máx 10MB).`);
+        return;
+      }
     }
 
     const setUploadLoading = (loading: boolean) => {

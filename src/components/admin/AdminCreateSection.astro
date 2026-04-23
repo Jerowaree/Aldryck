@@ -44,11 +44,12 @@
     </p>
     <form id="photo-form" class="mt-7 space-y-5">
       <label class="block">
-        <span class="mb-2 block text-sm font-medium text-ink-muted">Título</span>
+        <span class="mb-2 block text-sm font-medium text-ink-muted">
+          Titulo (obligatorio si subes una sola foto)
+        </span>
         <input
           type="text"
           name="title"
-          required
           placeholder="Ej: Final del torneo"
           class="w-full rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink outline-none transition-colors focus:border-accent"
         />
@@ -86,11 +87,14 @@
         />
       </label>
       <label class="block">
-        <span class="mb-2 block text-sm font-medium text-ink-muted">Imagen</span>
+        <span class="mb-2 block text-sm font-medium text-ink-muted">
+          Imagen (hasta 15 archivos)
+        </span>
         <input
           type="file"
           name="file"
-          accept="image/jpeg,image/png,image/webp,image/avif"
+          accept="image/jpeg,image/png"
+          multiple
           required
           class="block w-full text-sm text-ink-muted file:mr-4 file:rounded-lg file:border-0 file:bg-accent file:px-4 file:py-2.5 file:font-semibold file:text-surface hover:file:bg-accent-hover"
         />
