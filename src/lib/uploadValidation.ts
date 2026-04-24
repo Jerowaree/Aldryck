@@ -1,5 +1,5 @@
 export const MAX_UPLOAD_FILE_COUNT = 20;
-export const MAX_UPLOAD_FILE_SIZE_BYTES = 4 * 1024 * 1024; // 4MB (Vercel limit is 4.5MB)
+export const MAX_UPLOAD_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB (Supabase Free Tier limit)
 
 export const SUPPORTED_UPLOAD_EXTENSIONS = [
   "jpg",
@@ -70,5 +70,5 @@ export function getUploadFileTypeError(file: UploadFileLike) {
 export function getUploadFileSizeError(file: UploadFileLike) {
   if (typeof file.size !== "number") return null;
   if (file.size <= MAX_UPLOAD_FILE_SIZE_BYTES) return null;
-  return `Error: ${file.name} es demasiado grande (máximo 4MB).`;
+  return `Error: ${file.name} es demasiado grande (máximo 50MB).`;
 }

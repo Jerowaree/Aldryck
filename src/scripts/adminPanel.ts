@@ -1,9 +1,10 @@
-import { getBrowserSupabaseClient } from "../lib/supabase";
+import { getBrowserSupabaseClient, getSupabaseBucketName } from "../lib/supabase";
 import {
   getUploadFileSizeError,
   getUploadFileTypeError,
   MAX_UPLOAD_FILE_COUNT,
 } from "../lib/uploadValidation";
+import { createStoragePath } from "../lib/portfolio";
 
 interface Category {
   id: string;
@@ -391,41 +392,64 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
       formData.set("shotAt", new Date(shotAtValue).toISOString());
 
     try {
-      const response = await adminFetch("/api/upload-photo.json", {
-        method: "POST",
-        body: formData,
-      });
+      const bucket = getSupabaseBucketName();
+      const results = [];
 
-      // Si el servidor (Vercel) corta la petición por tamaño, no devolverá JSON
-      if (response.status === 413) {
-        showError("La imagen es demasiado pesada para el servidor (máximo ~4.5MB).");
-        setStatus("❌ Error: Imagen demasiado pesada");
-        return;
-      }
+      for (const file of files) {
+        setStatus(`Subiendo ${file.name}...`);
+        const path = createStoragePath(file.name);
+        
+        // Subida directa a Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(path, file);
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Respuesta no JSON:", text);
-        showError("El servidor respondió con un error inesperado. Inténtalo de nuevo.");
-        setStatus("❌ Error inesperado del servidor");
-        return;
-      }
+        if (uploadError) throw uploadError;
 
-      const json = await response.json();
+        const { data: publicUrlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(path);
+        
+        // Determinar título (si son varias fotos usamos el nombre del archivo)
+        const resolvedTitle = files.length > 1 
+          ? file.name.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ").trim() || "Sin título"
+          : title;
 
-      if (!response.ok) {
-        showError(json.error || "Revisa los campos e inténtalo de nuevo");
-        setStatus("❌ Error al subir");
-        return;
+        // Registrar en la base de datos a través de nuestra API
+        const recordFormData = new FormData();
+        recordFormData.set("imageUrl", publicUrlData.publicUrl);
+        recordFormData.set("imagePath", path);
+        recordFormData.set("title", resolvedTitle);
+        recordFormData.set("categoryId", String(formData.get("categoryId") || ""));
+        recordFormData.set("description", String(formData.get("description") || ""));
+        recordFormData.set("isPublished", "true");
+        if (shotAtValue) recordFormData.set("shotAt", new Date(shotAtValue).toISOString());
+
+        const response = await adminFetch("/api/upload-photo.json", {
+          method: "POST",
+          body: recordFormData,
+        });
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error(`Error inesperado del servidor al procesar ${file.name}`);
+        }
+
+        const json = await response.json();
+        if (!response.ok) {
+          throw new Error(json.error || `Error al registrar ${file.name} en la base de datos`);
+        }
+        
+        results.push(json.data);
       }
 
       photoForm.reset();
       await loadPhotos();
-      setStatus("✅ Foto subida con éxito.");
+      setStatus(`✅ ${results.length} foto(s) subida(s) con éxito.`);
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Error de red";
-      setStatus(`❌ Error crítico: ${msg}. Verifica tu conexión a internet.`);
+      const msg = error instanceof Error ? error.message : "Error desconocido";
+      showError(msg);
+      setStatus(`❌ Error: ${msg}`);
     } finally {
       setUploadLoading(false);
     }

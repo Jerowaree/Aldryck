@@ -336,7 +336,7 @@ export async function updatePhotoById(
   return data as Photo;
 }
 
-function createStoragePath(filename: string) {
+export function createStoragePath(filename: string) {
   const ext = filename.includes(".") ? filename.split(".").pop() : "jpg";
   const id = crypto.randomUUID();
   const dateFolder = new Date().toISOString().split("T")[0];

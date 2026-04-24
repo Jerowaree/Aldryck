@@ -16,6 +16,8 @@ export const POST: APIRoute = async ({ request }) => {
 
     const formData = await request.formData();
 
+    const imageUrl = String(formData.get("imageUrl") || "");
+    const imagePath = String(formData.get("imagePath") || "");
     const files = formData
       .getAll("file")
       .filter((item) => item instanceof File) as File[];
@@ -26,8 +28,8 @@ export const POST: APIRoute = async ({ request }) => {
     const isPublished =
       String(formData.get("isPublished") || "false") === "true";
 
-    if (!files.length) {
-      return jsonError("El archivo es requerido.", 400);
+    if (!files.length && !imageUrl) {
+      return jsonError("El archivo o la URL de imagen es requerida.", 400);
     }
 
     if (files.length > MAX_UPLOAD_FILE_COUNT) {
@@ -42,8 +44,8 @@ export const POST: APIRoute = async ({ request }) => {
       if (typeError) return jsonError(typeError, 400);
     }
 
-    if (files.length === 1 && !title) {
-      return jsonError("title es obligatorio si subes una sola foto.", 400);
+    if ((files.length === 1 || imageUrl) && !title) {
+      return jsonError("title es obligatorio.", 400);
     }
 
     if (!categoryId) {
@@ -52,21 +54,42 @@ export const POST: APIRoute = async ({ request }) => {
 
     const supabase = getServerSupabaseAdminClient();
     const photos = [];
-    for (const file of files) {
-      const resolvedTitle =
-        files.length > 1 ? titleFromFilename(file.name) : title;
-      const photo = await uploadPhotoAndCreateRecord(supabase, {
-        file,
-        title: resolvedTitle,
-        categoryId,
-        description: description || undefined,
-        shotAt: shotAt || undefined,
-        isPublished,
-      });
-      photos.push(photo);
+
+    // Si ya tenemos la URL (subida directa desde el cliente)
+    if (imageUrl && imagePath) {
+      const { data, error } = await supabase
+        .from("photos")
+        .insert({
+          title,
+          category_id: categoryId,
+          description: description || null,
+          image_path: imagePath,
+          image_url: imageUrl,
+          is_published: isPublished,
+          shot_at: shotAt || null,
+        })
+        .select("*")
+        .single();
+      if (error) throw error;
+      photos.push(data);
+    } else {
+      // Subida tradicional (sujeta a límites de Vercel)
+      for (const file of files) {
+        const resolvedTitle =
+          files.length > 1 ? titleFromFilename(file.name) : title;
+        const photo = await uploadPhotoAndCreateRecord(supabase, {
+          file,
+          title: resolvedTitle,
+          categoryId,
+          description: description || undefined,
+          shotAt: shotAt || undefined,
+          isPublished,
+        });
+        photos.push(photo);
+      }
     }
 
-    const data = files.length > 1 ? photos : photos[0];
+    const data = photos.length > 1 ? photos : photos[0];
     return new Response(JSON.stringify({ data }), {
       headers: { "content-type": "application/json; charset=utf-8" },
       status: 201,
