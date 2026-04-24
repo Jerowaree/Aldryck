@@ -1,3 +1,16 @@
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Photo {
+  id: string;
+  title: string;
+  description?: string;
+  image_url: string;
+  category_id: string;
+}
+
 export function initGalleryGrid() {
   const root = document.querySelector("[data-gallery-root]");
   if (!root) throw new Error("Gallery root missing");
@@ -57,7 +70,7 @@ export function initGalleryGrid() {
     return liBase;
   };
 
-  const renderPhotos = (photos: any[]) => {
+  const renderPhotos = (photos: Photo[]) => {
     if (!photos.length && state.page === 1) {
       grid.innerHTML =
         '<li class="rounded-xl border border-line bg-surface-elevated p-6 text-sm text-ink-muted">No hay fotos publicadas en esta categoría todavía.</li>';
@@ -66,7 +79,7 @@ export function initGalleryGrid() {
 
     const fragment = document.createDocumentFragment();
 
-    photos.forEach((photo, index) => {
+    photos.forEach((photo: Photo, index) => {
       const item = document.createElement("li");
       item.className = cardClass(index);
 
@@ -113,11 +126,12 @@ export function initGalleryGrid() {
 
   const loadCategories = async () => {
     const response = await fetch("/api/categories.json");
-    if (!response.ok) throw new Error("No se pudieron cargar categorías");
+    const contentType = response.headers.get("content-type");
+    if (!response.ok || !contentType?.includes("application/json")) throw new Error("No se pudieron cargar categorías");
     const json = await response.json();
-    const categories = Array.isArray(json.data) ? json.data : [];
+    const categories = (Array.isArray(json.data) ? json.data : []) as Category[];
 
-    categories.forEach((category) => {
+    categories.forEach((category: Category) => {
       labelByCategory.set(category.id, category.name);
     });
 
@@ -129,7 +143,7 @@ export function initGalleryGrid() {
     allButton.textContent = "Todas";
     filterContainer.appendChild(allButton);
 
-    categories.forEach((category) => {
+    categories.forEach((category: Category) => {
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.category = category.id;
@@ -165,9 +179,10 @@ export function initGalleryGrid() {
 
     try {
       const response = await fetch(url);
-      if (!response.ok) throw new Error("Error al cargar fotos");
+      const contentType = response.headers.get("content-type");
+      if (!response.ok || !contentType?.includes("application/json")) throw new Error("Error al cargar fotos");
       const json = await response.json();
-      const photos = Array.isArray(json.data) ? json.data : [];
+      const photos = (Array.isArray(json.data) ? json.data : []) as Photo[];
       renderPhotos(photos);
 
       state.hasMore = Boolean(json.pagination?.hasMore);

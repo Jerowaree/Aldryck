@@ -5,6 +5,21 @@ import {
   MAX_UPLOAD_FILE_COUNT,
 } from "../lib/uploadValidation";
 
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Photo {
+  id: string;
+  title: string;
+  description?: string;
+  image_url: string;
+  category_id: string;
+  created_at: string;
+  is_published: boolean;
+}
+
 export function initAdminPanel(allowedAdminEmails: string[]) {
   const categoryForm = document.getElementById("category-form");
   const photoForm = document.getElementById("photo-form");
@@ -110,8 +125,8 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   const setPhotoStatus = (text: string) => (photoStatus.textContent = text);
 
   const categoryNameById = new Map<string, string>();
-  let allPhotos: any[] = [];
-  let filteredPhotos: any[] = [];
+  let allPhotos: Photo[] = [];
+  let filteredPhotos: Photo[] = [];
   const photosPageSize = 10;
   let visiblePhotosCount = photosPageSize;
   let accessToken = "";
@@ -167,8 +182,9 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
 
   const loadCategories = async () => {
     const response = await fetch("/api/categories.json");
-    const json = await response.json();
-    const categories = Array.isArray(json.data) ? json.data : [];
+    const contentType = response.headers.get("content-type");
+    const json = contentType?.includes("application/json") ? await response.json() : { data: [] };
+    const categories = (Array.isArray(json.data) ? json.data : []) as Category[];
 
     categorySelect.innerHTML =
       '<option value="">Selecciona una categoría</option>';
@@ -177,7 +193,7 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
       '<option value="all">Todas las categorías</option>';
     editPhotoCategory.innerHTML = "";
 
-    categories.forEach((category: any) => {
+    categories.forEach((category: Category) => {
       categoryNameById.set(category.id, category.name);
       const option = document.createElement("option");
       option.value = category.id;
@@ -209,6 +225,10 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   const loadContactLeads = async () => {
     setLeadStatus("Cargando consultas...");
     const response = await adminFetch("/api/contact-leads.json");
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      return setLeadStatus("Error del servidor al cargar consultas.");
+    }
     const json = await response.json();
     if (!response.ok)
       return setLeadStatus(
@@ -259,7 +279,7 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     }
 
     const visiblePhotos = filteredPhotos.slice(0, visiblePhotosCount);
-    visiblePhotos.forEach((photo) => {
+    visiblePhotos.forEach((photo: Photo) => {
       const item = document.createElement("li");
       item.className =
         "flex gap-3 rounded-xl border border-line bg-surface p-3";
@@ -278,10 +298,14 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   const loadPhotos = async () => {
     setPhotoStatus("Cargando fotos...");
     const response = await adminFetch("/api/admin-photos.json");
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      return setPhotoStatus("Error del servidor al cargar fotos.");
+    }
     const json = await response.json();
     if (!response.ok)
       return setPhotoStatus(json.error || "No se pudieron cargar las fotos.");
-    allPhotos = Array.isArray(json.data) ? json.data : [];
+    allPhotos = (Array.isArray(json.data) ? json.data : []) as Photo[];
     visiblePhotosCount = photosPageSize;
     renderPhotos();
   };
@@ -298,6 +322,10 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
         slug: String(formData.get("slug") || ""),
       }),
     });
+    const contentType = response.headers.get("content-type");
+    if (!contentType?.includes("application/json")) {
+      return setStatus("Error del servidor al crear categoría.");
+    }
     const json = await response.json();
     if (!response.ok)
       return setStatus(
@@ -367,6 +395,23 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
         method: "POST",
         body: formData,
       });
+
+      // Si el servidor (Vercel) corta la petición por tamaño, no devolverá JSON
+      if (response.status === 413) {
+        showError("La imagen es demasiado pesada para el servidor (máximo ~4.5MB).");
+        setStatus("❌ Error: Imagen demasiado pesada");
+        return;
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Respuesta no JSON:", text);
+        showError("El servidor respondió con un error inesperado. Inténtalo de nuevo.");
+        setStatus("❌ Error inesperado del servidor");
+        return;
+      }
+
       const json = await response.json();
 
       if (!response.ok) {
@@ -418,6 +463,12 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ id: categoryId }),
           });
+          const contentType = response.headers.get("content-type");
+          if (!contentType?.includes("application/json")) {
+            setStatus("Error del servidor al eliminar categoría.");
+            button.disabled = false;
+            return;
+          }
           const json = await response.json();
           if (!response.ok) {
             setStatus(json.error || "No se pudo eliminar la categoría.");
@@ -445,7 +496,7 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const editButton = target.closest("[data-edit-photo]");
     if (editButton instanceof HTMLButtonElement) {
       const current = allPhotos.find(
-        (photo) => photo.id === editButton.dataset.editPhoto,
+        (photo: Photo) => photo.id === editButton.dataset.editPhoto,
       );
       if (!current) return setPhotoStatus("No se encontró la foto a editar.");
       editPhotoId.value = current.id;
@@ -475,6 +526,12 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ id: photoId }),
           });
+          const contentType = response.headers.get("content-type");
+          if (!contentType?.includes("application/json")) {
+            setPhotoStatus("Error del servidor al eliminar foto.");
+            button.disabled = false;
+            return;
+          }
           const json = await response.json();
           if (!response.ok) {
             setPhotoStatus(json.error || "No se pudo eliminar la foto.");
@@ -523,6 +580,11 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, name: newName }),
       });
+      const contentType = response.headers.get("content-type");
+      if (!contentType?.includes("application/json")) {
+        setStatus("Error del servidor al actualizar categoría.");
+        return;
+      }
       if (!response.ok) {
         const json = await response.json();
         setStatus(json.error || "No se pudo actualizar la categoría.");
@@ -575,6 +637,10 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
           isPublished: editPhotoPublished.checked,
         }),
       });
+      const contentType = response.headers.get("content-type");
+      if (!contentType?.includes("application/json")) {
+        return (editPhotoStatus.textContent = "Error del servidor.");
+      }
       const json = await response.json();
       if (!response.ok)
         return (editPhotoStatus.textContent =
