@@ -2,6 +2,10 @@ import type { APIRoute } from "astro";
 import { requireAdminUser, unauthorizedResponse } from "../../lib/adminAuth";
 import { uploadPhotoAndCreateRecord } from "../../lib/portfolio";
 import { getServerSupabaseAdminClient } from "../../lib/supabase";
+import {
+  getUploadFileTypeError,
+  MAX_UPLOAD_FILE_COUNT,
+} from "../../lib/uploadValidation";
 
 export const GET: APIRoute = async () => jsonError("Metodo no permitido.", 405);
 
@@ -12,7 +16,9 @@ export const POST: APIRoute = async ({ request }) => {
 
     const formData = await request.formData();
 
-    const files = formData.getAll("file").filter((item) => item instanceof File) as File[];
+    const files = formData
+      .getAll("file")
+      .filter((item) => item instanceof File) as File[];
     const title = String(formData.get("title") || "");
     const categoryId = String(formData.get("categoryId") || "");
     const description = String(formData.get("description") || "");
@@ -24,19 +30,16 @@ export const POST: APIRoute = async ({ request }) => {
       return jsonError("El archivo es requerido.", 400);
     }
 
-    if (files.length > 15) {
-      return jsonError("Solo se permiten hasta 15 archivos por subida.", 400);
+    if (files.length > MAX_UPLOAD_FILE_COUNT) {
+      return jsonError(
+        `Solo se permiten hasta ${MAX_UPLOAD_FILE_COUNT} archivos por subida.`,
+        400,
+      );
     }
 
-    const allowedMimeTypes = new Set(["image/jpeg", "image/png"]);
-    const allowedExtensions = new Set(["jpg", "jpeg", "png"]);
     for (const file of files) {
-      const extension = file.name.split(".").pop()?.toLowerCase() || "";
-      const isMimeAllowed = file.type ? allowedMimeTypes.has(file.type) : false;
-      const isExtensionAllowed = allowedExtensions.has(extension);
-      if (!isMimeAllowed && !isExtensionAllowed) {
-        return jsonError("Solo se permiten imagenes JPG o PNG.", 400);
-      }
+      const typeError = getUploadFileTypeError(file);
+      if (typeError) return jsonError(typeError, 400);
     }
 
     if (files.length === 1 && !title) {
@@ -50,7 +53,8 @@ export const POST: APIRoute = async ({ request }) => {
     const supabase = getServerSupabaseAdminClient();
     const photos = [];
     for (const file of files) {
-      const resolvedTitle = files.length > 1 ? titleFromFilename(file.name) : title;
+      const resolvedTitle =
+        files.length > 1 ? titleFromFilename(file.name) : title;
       const photo = await uploadPhotoAndCreateRecord(supabase, {
         file,
         title: resolvedTitle,
@@ -69,11 +73,10 @@ export const POST: APIRoute = async ({ request }) => {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? normalizeUploadError(error.message) : "No se pudo subir la foto.";
-    return jsonError(
-      message,
-      500,
-    );
+      error instanceof Error
+        ? normalizeUploadError(error.message)
+        : "No se pudo subir la foto.";
+    return jsonError(message, 500);
   }
 };
 
@@ -85,7 +88,10 @@ function jsonError(message: string, status: number) {
 }
 
 function titleFromFilename(filename: string) {
-  const base = filename.replace(/\.[^/.]+$/, "").replace(/[-_]+/g, " ").trim();
+  const base = filename
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[-_]+/g, " ")
+    .trim();
   return base || "Sin titulo";
 }
 

@@ -1,4 +1,9 @@
 import { getBrowserSupabaseClient } from "../lib/supabase";
+import {
+  getUploadFileSizeError,
+  getUploadFileTypeError,
+  MAX_UPLOAD_FILE_COUNT,
+} from "../lib/uploadValidation";
 
 export function initAdminPanel(allowedAdminEmails: string[]) {
   const categoryForm = document.getElementById("category-form");
@@ -19,7 +24,9 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   const editPhotoForm = document.getElementById("edit-photo-form");
   const editPhotoId = document.getElementById("edit-photo-id");
   const editPhotoTitle = document.getElementById("edit-photo-title");
-  const editPhotoDescription = document.getElementById("edit-photo-description");
+  const editPhotoDescription = document.getElementById(
+    "edit-photo-description",
+  );
   const editPhotoCategory = document.getElementById("edit-photo-category");
   const editPhotoPublished = document.getElementById("edit-photo-published");
   const editPhotoStatus = document.getElementById("edit-photo-status");
@@ -31,13 +38,19 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   const editCategoryForm = document.getElementById("edit-category-form");
   const editCategoryIdInput = document.getElementById("edit-category-id");
   const editCategoryNameInput = document.getElementById("edit-category-name");
-  const cancelEditCategoryButton = document.getElementById("cancel-edit-category-modal");
+  const cancelEditCategoryButton = document.getElementById(
+    "cancel-edit-category-modal",
+  );
   const saveCategoryButton = document.getElementById("save-category-button");
 
   const deleteConfirmModal = document.getElementById("delete-confirm-modal");
-  const cancelDeleteModalButton = document.getElementById("cancel-delete-modal");
+  const cancelDeleteModalButton = document.getElementById(
+    "cancel-delete-modal",
+  );
   const confirmDeleteButton = document.getElementById("confirm-delete-button");
-  const deleteConfirmMessage = document.getElementById("delete-confirm-message");
+  const deleteConfirmMessage = document.getElementById(
+    "delete-confirm-message",
+  );
 
   const logoutButton = document.getElementById("admin-logout");
 
@@ -79,6 +92,18 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   ) {
     throw new Error("Admin UI no disponible");
   }
+
+  const errorModal = document.getElementById("error-modal") as HTMLDialogElement;
+  const errorModalMessage = document.getElementById("error-modal-message");
+
+  const showError = (message: string) => {
+    if (errorModal && errorModalMessage) {
+      errorModalMessage.textContent = message;
+      errorModal.showModal();
+    } else {
+      alert(message);
+    }
+  };
 
   const setStatus = (text: string) => (statusEl.textContent = text);
   const setLeadStatus = (text: string) => (leadStatus.textContent = text);
@@ -124,8 +149,12 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;");
 
-  const adminFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
-    if (!accessToken) throw new Error("Sesion expirada. Inicia sesión nuevamente.");
+  const adminFetch = async (
+    input: RequestInfo | URL,
+    init: RequestInit = {},
+  ) => {
+    if (!accessToken)
+      throw new Error("Sesion expirada. Inicia sesión nuevamente.");
     const headers = new Headers(init.headers || {});
     headers.set("authorization", `Bearer ${accessToken}`);
     const response = await fetch(input, { ...init, headers });
@@ -141,9 +170,11 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const json = await response.json();
     const categories = Array.isArray(json.data) ? json.data : [];
 
-    categorySelect.innerHTML = '<option value="">Selecciona una categoría</option>';
+    categorySelect.innerHTML =
+      '<option value="">Selecciona una categoría</option>';
     categoryList.innerHTML = "";
-    photoFilterCategory.innerHTML = '<option value="all">Todas las categorías</option>';
+    photoFilterCategory.innerHTML =
+      '<option value="all">Todas las categorías</option>';
     editPhotoCategory.innerHTML = "";
 
     categories.forEach((category: any) => {
@@ -179,12 +210,16 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     setLeadStatus("Cargando consultas...");
     const response = await adminFetch("/api/contact-leads.json");
     const json = await response.json();
-    if (!response.ok) return setLeadStatus(json.error || "No se pudieron cargar las consultas.");
+    if (!response.ok)
+      return setLeadStatus(
+        json.error || "No se pudieron cargar las consultas.",
+      );
 
     const leads = Array.isArray(json.data) ? json.data : [];
     leadList.innerHTML = "";
     if (!leads.length) {
-      leadList.innerHTML = '<tr><td colspan="5" class="px-3 py-4 text-sm text-ink-muted">No hay consultas todavía.</td></tr>';
+      leadList.innerHTML =
+        '<tr><td colspan="5" class="px-3 py-4 text-sm text-ink-muted">No hay consultas todavía.</td></tr>';
       return setLeadStatus("Sin consultas por ahora.");
     }
 
@@ -209,22 +244,28 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const categoryFilter = photoFilterCategory.value;
     filteredPhotos = allPhotos.filter((photo) => {
       const title = String(photo.title || "").toLowerCase();
-      return (!query || title.includes(query)) && (categoryFilter === "all" || photo.category_id === categoryFilter);
+      return (
+        (!query || title.includes(query)) &&
+        (categoryFilter === "all" || photo.category_id === categoryFilter)
+      );
     });
 
     photoList.innerHTML = "";
     if (!filteredPhotos.length) {
       updatePhotoLoadMoreState();
-      photoList.innerHTML = '<li class="rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink-muted sm:col-span-2">No se encontraron fotos con los filtros actuales.</li>';
+      photoList.innerHTML =
+        '<li class="rounded-lg border border-line bg-surface px-4 py-3 text-sm text-ink-muted sm:col-span-2">No se encontraron fotos con los filtros actuales.</li>';
       return setPhotoStatus("Sin resultados con estos filtros.");
     }
 
     const visiblePhotos = filteredPhotos.slice(0, visiblePhotosCount);
     visiblePhotos.forEach((photo) => {
       const item = document.createElement("li");
-      item.className = "flex gap-3 rounded-xl border border-line bg-surface p-3";
+      item.className =
+        "flex gap-3 rounded-xl border border-line bg-surface p-3";
       const createdAt = new Date(photo.created_at).toLocaleString("es-PE");
-      const categoryName = categoryNameById.get(photo.category_id) || "Sin categoría";
+      const categoryName =
+        categoryNameById.get(photo.category_id) || "Sin categoría";
       item.innerHTML = `<img src="${escapeHtml(photo.image_url || "")}" alt="${escapeHtml(photo.title || "Foto")}" class="h-20 w-20 rounded-lg object-cover" loading="lazy" decoding="async" /><div class="min-w-0 flex-1"><p class="truncate text-sm font-medium text-ink">${escapeHtml(photo.title || "Sin título")}</p><p class="mt-1 text-xs text-ink-muted">${createdAt}</p><p class="mt-1 text-xs text-ink-muted">${escapeHtml(categoryName)}</p><p class="mt-1 text-xs uppercase tracking-wider ${photo.is_published ? "text-emerald-300" : "text-amber-300"}">${photo.is_published ? "Publicada" : "Borrador"}</p></div><button type="button" data-edit-photo="${escapeHtml(photo.id || "")}" class="self-start rounded-md border border-line px-3 py-1.5 text-xs font-semibold text-ink-muted transition-colors hover:border-accent/40 hover:text-ink">Editar</button><button type="button" data-delete-photo="${escapeHtml(photo.id || "")}" class="self-start rounded-md border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition-colors hover:bg-red-500/20">Eliminar</button>`;
       photoList.appendChild(item);
     });
@@ -238,7 +279,8 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     setPhotoStatus("Cargando fotos...");
     const response = await adminFetch("/api/admin-photos.json");
     const json = await response.json();
-    if (!response.ok) return setPhotoStatus(json.error || "No se pudieron cargar las fotos.");
+    if (!response.ok)
+      return setPhotoStatus(json.error || "No se pudieron cargar las fotos.");
     allPhotos = Array.isArray(json.data) ? json.data : [];
     visiblePhotosCount = photosPageSize;
     renderPhotos();
@@ -251,10 +293,16 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const response = await adminFetch("/api/categories.json", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: String(formData.get("name") || ""), slug: String(formData.get("slug") || "") }),
+      body: JSON.stringify({
+        name: String(formData.get("name") || ""),
+        slug: String(formData.get("slug") || ""),
+      }),
     });
     const json = await response.json();
-    if (!response.ok) return setStatus(json.error || "No se pudo crear la categoría. Inténtalo de nuevo.");
+    if (!response.ok)
+      return setStatus(
+        json.error || "No se pudo crear la categoría. Inténtalo de nuevo.",
+      );
     categoryForm.reset();
     await loadCategories();
     setStatus("Categoría creada con éxito.");
@@ -264,14 +312,18 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     event.preventDefault();
 
     const formData = new FormData(photoForm);
-    const files = formData.getAll("file").filter((item) => item instanceof File) as File[];
+    const files = formData
+      .getAll("file")
+      .filter((item) => item instanceof File) as File[];
     const title = String(formData.get("title") || "").trim();
     if (!files.length) {
       setStatus("Error: Debes seleccionar al menos una imagen.");
       return;
     }
-    if (files.length > 15) {
-      setStatus("Error: Solo se permiten hasta 15 archivos por subida.");
+    if (files.length > MAX_UPLOAD_FILE_COUNT) {
+      setStatus(
+        `Error: Solo se permiten hasta ${MAX_UPLOAD_FILE_COUNT} archivos por subida.`,
+      );
       return;
     }
     if (files.length === 1 && !title) {
@@ -279,26 +331,26 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
       return;
     }
     for (const file of files) {
-      const allowedTypes = new Set(["image/jpeg", "image/png"]);
-      const extension = file.name.split(".").pop()?.toLowerCase() || "";
-      const isAllowedType = file.type ? allowedTypes.has(file.type) : false;
-      const isAllowedExtension = extension === "jpg" || extension === "jpeg" || extension === "png";
-      if (!isAllowedType && !isAllowedExtension) {
-        setStatus("Error: Solo se permiten imagenes JPG o PNG.");
+      const fileTypeError = getUploadFileTypeError(file);
+      if (fileTypeError) {
+        setStatus(`Error: ${fileTypeError}`);
         return;
       }
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit check
-        setStatus(`Error: ${file.name} es demasiado grande (máx 10MB).`);
+      const fileSizeError = getUploadFileSizeError(file);
+      if (fileSizeError) {
+        showError(fileSizeError);
         return;
       }
     }
 
     const setUploadLoading = (loading: boolean) => {
-      const submitBtn = photoForm.querySelector('button[type="submit"]') as HTMLButtonElement;
+      const submitBtn = photoForm.querySelector(
+        'button[type="submit"]',
+      ) as HTMLButtonElement;
       if (submitBtn) {
         submitBtn.disabled = loading;
-        submitBtn.innerHTML = loading 
-          ? '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Subiendo...</span>' 
+        submitBtn.innerHTML = loading
+          ? '<span class="flex items-center gap-2"><svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Subiendo...</span>'
           : "Subir foto";
       }
     };
@@ -307,14 +359,19 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     setUploadLoading(true);
     formData.set("isPublished", "true");
     const shotAtValue = String(formData.get("shotAt") || "");
-    if (shotAtValue) formData.set("shotAt", new Date(shotAtValue).toISOString());
-    
+    if (shotAtValue)
+      formData.set("shotAt", new Date(shotAtValue).toISOString());
+
     try {
-      const response = await adminFetch("/api/upload-photo.json", { method: "POST", body: formData });
+      const response = await adminFetch("/api/upload-photo.json", {
+        method: "POST",
+        body: formData,
+      });
       const json = await response.json();
-      
+
       if (!response.ok) {
-        setStatus(`❌ Error al subir: ${json.error || "Revisa los campos e inténtalo de nuevo"}`);
+        showError(json.error || "Revisa los campos e inténtalo de nuevo");
+        setStatus("❌ Error al subir");
         return;
       }
 
@@ -337,7 +394,7 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     if (editBtn instanceof HTMLButtonElement) {
       const categoryId = editBtn.dataset.editCategory || "";
       const currentName = editBtn.dataset.categoryName || "";
-      
+
       editCategoryIdInput.value = categoryId;
       editCategoryNameInput.value = currentName;
       editCategoryModal.showModal();
@@ -350,29 +407,36 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const categoryId = button.dataset.deleteCategory;
     if (!categoryId) return;
 
-    showDeleteConfirm("Se eliminará la categoría. Solo funcionará si no tiene fotos asociadas. ¿Continuar?", async () => {
-      button.disabled = true;
-      setStatus("Eliminando categoría...");
-      try {
-        const response = await adminFetch("/api/categories.json", {
-          method: "DELETE",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ id: categoryId }),
-        });
-        const json = await response.json();
-        if (!response.ok) {
-          setStatus(json.error || "No se pudo eliminar la categoría.");
+    showDeleteConfirm(
+      "Se eliminará la categoría. Solo funcionará si no tiene fotos asociadas. ¿Continuar?",
+      async () => {
+        button.disabled = true;
+        setStatus("Eliminando categoría...");
+        try {
+          const response = await adminFetch("/api/categories.json", {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: categoryId }),
+          });
+          const json = await response.json();
+          if (!response.ok) {
+            setStatus(json.error || "No se pudo eliminar la categoría.");
+            button.disabled = false;
+            return;
+          }
+          await loadCategories();
+          await loadPhotos();
+          setStatus("Categoría eliminada con éxito.");
+        } catch (error) {
+          setStatus(
+            error instanceof Error
+              ? error.message
+              : "No se pudo eliminar la categoría.",
+          );
           button.disabled = false;
-          return;
         }
-        await loadCategories();
-        await loadPhotos();
-        setStatus("Categoría eliminada con éxito.");
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : "No se pudo eliminar la categoría.");
-        button.disabled = false;
-      }
-    });
+      },
+    );
   });
 
   photoList.addEventListener("click", async (event) => {
@@ -380,7 +444,9 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     if (!(target instanceof Element)) return;
     const editButton = target.closest("[data-edit-photo]");
     if (editButton instanceof HTMLButtonElement) {
-      const current = allPhotos.find((photo) => photo.id === editButton.dataset.editPhoto);
+      const current = allPhotos.find(
+        (photo) => photo.id === editButton.dataset.editPhoto,
+      );
       if (!current) return setPhotoStatus("No se encontró la foto a editar.");
       editPhotoId.value = current.id;
       editPhotoTitle.value = current.title || "";
@@ -398,28 +464,35 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const photoId = button.dataset.deletePhoto;
     if (!photoId) return;
 
-    showDeleteConfirm("Esta acción eliminará la foto del panel y del storage. ¿Deseas continuar?", async () => {
-      button.disabled = true;
-      setPhotoStatus("Eliminando foto...");
-      try {
-        const response = await adminFetch("/api/admin-photos.json", {
-          method: "DELETE",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ id: photoId }),
-        });
-        const json = await response.json();
-        if (!response.ok) {
-          setPhotoStatus(json.error || "No se pudo eliminar la foto.");
+    showDeleteConfirm(
+      "Esta acción eliminará la foto del panel y del storage. ¿Deseas continuar?",
+      async () => {
+        button.disabled = true;
+        setPhotoStatus("Eliminando foto...");
+        try {
+          const response = await adminFetch("/api/admin-photos.json", {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: photoId }),
+          });
+          const json = await response.json();
+          if (!response.ok) {
+            setPhotoStatus(json.error || "No se pudo eliminar la foto.");
+            button.disabled = false;
+            return;
+          }
+          await loadPhotos();
+          setPhotoStatus("Foto eliminada con éxito.");
+        } catch (error) {
+          setPhotoStatus(
+            error instanceof Error
+              ? error.message
+              : "No se pudo eliminar la foto.",
+          );
           button.disabled = false;
-          return;
         }
-        await loadPhotos();
-        setPhotoStatus("Foto eliminada con éxito.");
-      } catch (error) {
-        setPhotoStatus(error instanceof Error ? error.message : "No se pudo eliminar la foto.");
-        button.disabled = false;
-      }
-    });
+      },
+    );
   });
 
   const closeEditModal = () => {
@@ -460,7 +533,11 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
       setStatus("✅ Categoría actualizada con éxito.");
       closeEditCategoryModal();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Error al actualizar categoría");
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Error al actualizar categoría",
+      );
     } finally {
       saveCategoryButton.disabled = false;
     }
@@ -481,7 +558,9 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     const id = editPhotoId.value.trim();
     const title = editPhotoTitle.value.trim();
     const categoryId = editPhotoCategory.value;
-    if (!id || !title || !categoryId) return (editPhotoStatus.textContent = "Completa los campos obligatorios.");
+    if (!id || !title || !categoryId)
+      return (editPhotoStatus.textContent =
+        "Completa los campos obligatorios.");
     saveEditModalButton.disabled = true;
     editPhotoStatus.textContent = "Guardando cambios...";
     try {
@@ -497,12 +576,17 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
         }),
       });
       const json = await response.json();
-      if (!response.ok) return (editPhotoStatus.textContent = json.error || "No se pudo actualizar la foto.");
+      if (!response.ok)
+        return (editPhotoStatus.textContent =
+          json.error || "No se pudo actualizar la foto.");
       await loadPhotos();
       closeEditModal();
       setPhotoStatus("Foto actualizada con éxito.");
     } catch (error) {
-      editPhotoStatus.textContent = error instanceof Error ? error.message : "No se pudo actualizar la foto.";
+      editPhotoStatus.textContent =
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar la foto.";
     } finally {
       saveEditModalButton.disabled = false;
     }
@@ -510,12 +594,16 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
 
   refreshLeadsButton?.addEventListener("click", () => {
     loadContactLeads().catch((error) =>
-      setLeadStatus(error instanceof Error ? error.message : "Error cargando consultas.")
+      setLeadStatus(
+        error instanceof Error ? error.message : "Error cargando consultas.",
+      ),
     );
   });
   refreshPhotosButton?.addEventListener("click", () => {
     loadPhotos().catch((error) =>
-      setPhotoStatus(error instanceof Error ? error.message : "Error cargando fotos.")
+      setPhotoStatus(
+        error instanceof Error ? error.message : "Error cargando fotos.",
+      ),
     );
   });
   photoLoadMoreButton.addEventListener("click", () => {
@@ -556,7 +644,9 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
     if (!session) return (window.location.href = "/admin-login");
     const sessionEmail = (session.user.email || "").toLowerCase();
     if (!allowedAdminEmails.includes(sessionEmail)) {
-      supabase.auth.signOut().finally(() => (window.location.href = "/admin-login"));
+      supabase.auth
+        .signOut()
+        .finally(() => (window.location.href = "/admin-login"));
       document.cookie = "admin_auth=; Path=/; Max-Age=0; SameSite=Lax";
       return;
     }
@@ -565,6 +655,6 @@ export function initAdminPanel(allowedAdminEmails: string[]) {
   });
 
   bootstrapAdmin().catch((error) =>
-    setStatus(error instanceof Error ? error.message : "Error cargando datos.")
+    setStatus(error instanceof Error ? error.message : "Error cargando datos."),
   );
 }

@@ -1,0 +1,56 @@
+<dialog
+  id="error-modal"
+  class="m-auto w-[min(92vw,440px)] rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl shadow-black/40 backdrop:bg-black/70"
+  aria-label="Error en la operación"
+>
+  <div class="p-6 sm:p-8">
+    <div class="flex items-start gap-4">
+      <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-6 w-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-display text-2xl tracking-tight text-ink">Ups, algo salió mal</h3>
+        <p id="error-modal-message" class="mt-3 text-sm leading-relaxed text-ink-muted">
+          No pudimos completar la acción. Por favor, revisa los detalles e intenta de nuevo.
+        </p>
+      </div>
+    </div>
+    
+    <div class="mt-8 flex justify-end">
+      <button
+        id="close-error-modal"
+        type="button"
+        class="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-xl bg-ink px-8 text-sm font-semibold text-surface transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      >
+        Entendido
+      </button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+  const errorModal = document.getElementById('error-modal') as HTMLDialogElement;
+  const closeBtn = document.getElementById('close-error-modal');
+
+  if (errorModal && closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      errorModal.close();
+    });
+
+    // Close on click outside
+    errorModal.addEventListener('click', (event) => {
+      const rect = errorModal.getBoundingClientRect();
+      const isInDialog = (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      );
+      if (!isInDialog) {
+        errorModal.close();
+      }
+    });
+  }
+</script>

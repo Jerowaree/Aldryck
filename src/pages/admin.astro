@@ -7,6 +7,7 @@ import AdminDeleteConfirmModal from "../components/admin/AdminDeleteConfirmModal
 import AdminHeader from "../components/admin/AdminHeader.astro";
 import AdminLeadsSection from "../components/admin/AdminLeadsSection.astro";
 import AdminPhotosSection from "../components/admin/AdminPhotosSection.astro";
+import AdminErrorModal from "../components/admin/AdminErrorModal.astro";
 import Layout from "../layouts/Layout.astro";
 
 
@@ -36,6 +37,7 @@ if (adminCookie !== "1") {
     <AdminEditPhotoModal />
     <AdminEditCategoryModal />
     <AdminDeleteConfirmModal />
+    <AdminErrorModal />
     <AdminLeadsSection />
   </main>
 
